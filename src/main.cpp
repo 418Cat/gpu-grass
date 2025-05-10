@@ -1,0 +1,190 @@
+#include <GL/gl.h>
+
+#include "geometric.hpp"
+#include "trigonometric.hpp"
+#include <ext/matrix_clip_space.hpp>
+#include <ext/matrix_transform.hpp>
+#include <gtc/type_ptr.hpp>
+
+#include <imgui.h>
+
+#include "shader.h"
+#include "ui.h"
+#include "Camera.h"
+
+void create_plane(unsigned int vbo, unsigned int ebo)
+{
+	float vertices[] = 
+	{
+	 //  X    Y     Z      U    V
+		 1.f, 0.f,  1.f,   1.f, 1.f,
+		-1.f, 0.f,  1.f,   0.f, 1.f,
+		-1.f, 0.f, -1.f,   0.f, 0.f,
+		 1.f, 0.f, -1.f,   1.f, 0.f,
+	};
+
+	unsigned int indices[] =
+	{
+		0, 1, 3,
+		1, 2, 3
+	};
+
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)0);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)(3*sizeof(float)));
+
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+}
+
+int main()
+{
+	UI::ui_init();
+	UI::show_ui = true;
+	UI::io->FontGlobalScale = 2.f;
+
+	Camera camera = Camera(glm::vec3(0.));
+	camera.turn_pitch(glm::radians(-30.));
+
+	unsigned int vao, vbo, ebo;
+	glGenVertexArrays(1, &vao);
+	glGenBuffers(1, &vbo);
+	glGenBuffers(1, &ebo);
+
+	glBindVertexArray(vao);
+	create_plane(vbo, ebo);
+
+	Shader shader = Shader("src/shaders/vs.glsl", "src/shaders/fs.glsl");
+	shader.use();
+
+	int win_width, win_height;
+	win_width = 800;
+	win_height = 600;
+	glm::mat4 projection_mat = glm::perspective(glm::radians(90.f), (float)win_width/(float)win_height, .1f, 100.f);
+	glm::mat4 view_mat = camera.camera_space();
+
+	float grass_height = .5f;
+	int n_shells = 20;
+
+	// Number of squares per side, so total number is squared
+	int n_squares = 50;
+
+	float mouse_sensitivity = 1./100.;
+	glm::vec2 mouse_pos = glm::vec2(UI::io->MousePos.x, UI::io->MousePos.y);
+	glm::vec2 old_mouse_pos = glm::vec2(0.);
+
+	float camera_speed = 1.;
+
+	double time = 0.;
+
+	while(UI::ui_is_shown())
+	{
+		double delta_time = glfwGetTime() - time;
+		time = glfwGetTime();
+		UI::ui_render_start();
+
+		// Update the projection matrix with new window sizes
+		UI::get_win_size(&win_width, &win_height);
+		projection_mat = glm::perspective(glm::radians(90.f), (float)win_width/(float)win_height, .1f, 100.f);		
+
+		/*
+		 * ---------------------------------------------------------------------
+		 *  UI Stuff 
+		 * ---------------------------------------------------------------------
+		 */
+		ImGui::SliderInt("n_squares", &n_squares, 1, 200);
+		ImGui::SliderInt("n_shells", &n_shells, 1, 300);
+		ImGui::SliderFloat("grass_height", &grass_height, 0.01f, 1.7f);
+		ImGui::DragFloat("Camera speed", &camera_speed, 1.f, 1.f, 100000.f);
+
+		if(ImGui::Button("Reset view"))
+		{
+			camera.camera_pos = glm::vec3(0.);
+		}
+
+
+		/*
+		 * ---------------------------------------------------------------------
+		 *  Camera movement & rotation
+		 * ---------------------------------------------------------------------
+		 */
+		mouse_pos = glm::vec2(UI::io->MousePos.x, UI::io->MousePos.y);
+		glm::vec2 delta_mouse = mouse_pos - old_mouse_pos;
+		old_mouse_pos = mouse_pos;
+		
+		// If lmb and mouse not used by imgui
+		if(		glfwGetMouseButton(UI::window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS &&
+				!UI::io->WantCaptureMouse)
+		{
+			camera.turn_yaw(delta_mouse.x*mouse_sensitivity);
+			camera.turn_pitch(-delta_mouse.y*mouse_sensitivity);
+		}
+
+		// My keyboard layout is AZERTY but for some reason glfw doesn't care
+		if(glfwGetKey(UI::window, GLFW_KEY_W) == GLFW_PRESS)
+		{
+			// Add camera front vector to its position
+			camera.camera_pos += camera.get_front()*(float)delta_time*camera_speed;
+		}
+		if(glfwGetKey(UI::window, GLFW_KEY_D) == GLFW_PRESS)
+		{
+			// Cross product with world Y to get right facing vector
+			camera.camera_pos +=
+				glm::normalize(glm::cross(camera.get_front(), glm::vec3(0.f, 1.f, 0.f)))*(float)delta_time*camera_speed;
+		}
+		if(glfwGetKey(UI::window, GLFW_KEY_A) == GLFW_PRESS)
+		{
+			// Negated cross product with world Y to get left facing vector
+			camera.camera_pos += 
+				-glm::normalize(glm::cross(camera.get_front(), glm::vec3(0.f, 1.f, 0.f)))*(float)delta_time*camera_speed;
+		}
+		if(glfwGetKey(UI::window, GLFW_KEY_S) == GLFW_PRESS)
+		{
+			// Substract front facing vector to camera pos
+			camera.camera_pos += -camera.get_front()*(float)delta_time*camera_speed;
+		}
+
+		view_mat = camera.camera_space(); // Update view matrix
+
+
+		/*
+		 * ---------------------------------------------------------------------
+		 *  Drawing planes
+		 * ---------------------------------------------------------------------
+		 */
+		glm::mat4 model_mat = glm::mat4(1.f);
+
+		for(int s = 0; s < n_shells; s++)
+		{
+			float normalized_height = (float)s/n_shells;
+			
+
+			// Translate up the model based on the shell index
+			glm::mat4 tmp_model = glm::translate(model_mat,
+					glm::vec3(0.f, normalized_height*grass_height, -1.f));
+
+			// Rotate the model over time
+			//tmp_model = glm::rotate(tmp_model, (float)glfwGetTime()/8.f, glm::vec3(0.f, 1.f, 0.f));
+
+			shader.setMat4("model", glm::value_ptr(tmp_model));
+			shader.setMat4("view", glm::value_ptr(view_mat));
+			shader.setMat4("projection", glm::value_ptr(projection_mat));
+
+			shader.setFloat("height", normalized_height);
+
+			shader.setInt("n_squares", n_squares);
+
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		}
+
+		UI::ui_render_stop();
+	}
+
+	UI::ui_cleanup();
+	return 0;
+}
