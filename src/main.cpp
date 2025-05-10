@@ -46,10 +46,10 @@ int main()
 {
 	UI::ui_init();
 	UI::show_ui = true;
-	UI::io->FontGlobalScale = 2.f;
+	UI::io->FontGlobalScale = 1.f;
 
-	Camera camera = Camera(glm::vec3(0.));
-	camera.turn_pitch(glm::radians(-30.));
+	Camera camera = Camera(glm::vec3(-1.5f, 2.f, -1.f));
+	camera.turn_pitch(glm::radians(-20.));
 
 	unsigned int vao, vbo, ebo;
 	glGenVertexArrays(1, &vao);
@@ -69,10 +69,15 @@ int main()
 	glm::mat4 view_mat = camera.camera_space();
 
 	float grass_height = .5f;
-	int n_shells = 20;
+	int n_shells = 40;
+	float density = 50.;
+	float plane_scale = 30.f;
 
-	// Number of squares per side, so total number is squared
-	int n_squares = 50;
+	float wind_direction = 1.f; 
+	float wind_curve = 2.f;
+	float wind_force = .1f;
+	float wind_speed = 0.3f;
+
 
 	float mouse_sensitivity = 1./100.;
 	glm::vec2 mouse_pos = glm::vec2(UI::io->MousePos.x, UI::io->MousePos.y);
@@ -97,10 +102,15 @@ int main()
 		 *  UI Stuff 
 		 * ---------------------------------------------------------------------
 		 */
-		ImGui::SliderInt("n_squares", &n_squares, 1, 200);
-		ImGui::SliderInt("n_shells", &n_shells, 1, 300);
+		ImGui::DragFloat("Density", &density);
+		ImGui::SliderInt("n_shells", &n_shells, 1, 600);
 		ImGui::SliderFloat("grass_height", &grass_height, 0.01f, 1.7f);
+		ImGui::DragFloat("Plane size", &plane_scale, plane_scale*0.05);
 		ImGui::DragFloat("Camera speed", &camera_speed, 1.f, 1.f, 100000.f);
+		ImGui::SliderFloat("Wind direction", &wind_direction, -3.1415, 3.1415f);
+		ImGui::SliderFloat("Wind curve", &wind_curve, 0.01f, 10.f);
+		ImGui::SliderFloat("Wind force", &wind_force, 0.0f, 1.f);
+		ImGui::SliderFloat("Wind speed", &wind_speed, 0.f, 4.f);
 
 		if(ImGui::Button("Reset view"))
 		{
@@ -168,6 +178,8 @@ int main()
 			glm::mat4 tmp_model = glm::translate(model_mat,
 					glm::vec3(0.f, normalized_height*grass_height, -1.f));
 
+			tmp_model = glm::scale(tmp_model, glm::vec3(plane_scale));
+
 			// Rotate the model over time
 			//tmp_model = glm::rotate(tmp_model, (float)glfwGetTime()/8.f, glm::vec3(0.f, 1.f, 0.f));
 
@@ -177,7 +189,14 @@ int main()
 
 			shader.setFloat("height", normalized_height);
 
-			shader.setInt("n_squares", n_squares);
+			shader.setInt("n_squares", density*plane_scale);
+
+			shader.setFloat("wind_direction", wind_direction);
+			shader.setFloat("wind_curve", wind_curve);
+			shader.setFloat("wind_force", wind_force/plane_scale);
+			shader.setFloat("wind_speed", wind_speed);
+
+			shader.setFloat("time", glfwGetTime());
 
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		}

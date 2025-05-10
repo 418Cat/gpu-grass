@@ -4,6 +4,11 @@ in vec2 vs_uv;
 
 uniform float height;
 uniform int n_squares;
+uniform float wind_direction;
+uniform float wind_curve;
+uniform float wind_force;
+uniform float wind_speed;
+uniform float time;
 
 out vec4 fs_color;
 
@@ -15,30 +20,45 @@ float hash12(vec2 p)
     return fract((p3.x + p3.y) * p3.z);
 }
 
-// Returns the x&y coordinates of the square
-// 0<=x<n_squares; 0<=y<n_squares
-vec2 square_coordinates()
+vec2 uv_wind()
 {
-	return floor(vs_uv*n_squares);
+	return vs_uv +
+		vec2(cos(wind_direction), sin(wind_direction))*
+		wind_force*
+		pow(height, wind_curve)*
+		(sin(time*wind_speed)/2. + .5);
 }
 
-// uv in the square
-vec2 in_square_uv()
+// Avoids any tall border grass appearing
+bool grass_root_outside(vec2 uv)
 {
-	vec2 uv = fract(vs_uv*n_squares) - .5;
-	return uv;
+	return uv != clamp(uv, vec2(0.), vec2(1.));
+}
+
+// Returns the x&y coordinates of the square
+// 0<=x<n_squares; 0<=y<n_squares
+vec2 square_coordinates(vec2 uv)
+{
+	return floor(uv*n_squares);
+}
+
+// uv in the square section
+vec2 uv_in_square(vec2 uv)
+{
+	return fract(uv*n_squares) - .5;
 }
 
 void main()
 {
-	vec2 uv = in_square_uv();
-	float threshold = hash12(square_coordinates());
+	vec2 skewed = uv_wind();
+	vec2 uv = uv_in_square(skewed);
+	float threshold = hash12(square_coordinates(skewed));
 
 	if(
 			height > threshold ||
-			length(uv) > threshold-height/threshold 
+			length(uv) > threshold-height/threshold || // Makes grass thin on top
+			grass_root_outside(skewed)
 			) discard;
-
 
 	fs_color = vec4(0., .1+height, 0., 1.);
 }
