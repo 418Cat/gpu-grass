@@ -1,3 +1,6 @@
+#define EXEC_NAME "main"
+
+
 #include <GL/gl.h>
 
 #include "geometric.hpp"
@@ -42,15 +45,21 @@ void create_plane(unsigned int vbo, unsigned int ebo)
 	glEnableVertexAttribArray(1);
 }
 
-int main()
+std::string get_root_dir(char* file_path)
+{
+	std::string fpath = std::string(file_path);
+	std::string dpath = fpath.substr(0, fpath.find_last_of("/")+1);
+	return dpath;
+}
+
+int main(int a, char** args)
 {
 	UI::ui_init();
 	UI::show_ui = true;
 	UI::io->FontGlobalScale = 1.f;
+	UI::io->IniFilename = NULL;
 
-	Camera camera = Camera(glm::vec3(-2.5f, 1.5f, -1.f));
-	camera.turn_pitch(glm::radians(-50.));
-
+	// Setting up buffers and adding the plane
 	unsigned int vao, vbo, ebo;
 	glGenVertexArrays(1, &vao);
 	glGenBuffers(1, &vbo);
@@ -59,8 +68,17 @@ int main()
 	glBindVertexArray(vao);
 	create_plane(vbo, ebo);
 
-	Shader shader = Shader("src/shaders/vs.glsl", "src/shaders/fs.glsl");
+	// Getting the shader files path and compiling them
+	std::string exec_dir = get_root_dir(args[0]);
+	std::string vs_path = exec_dir + std::string("shaders/vs.glsl");
+	std::string fs_path = exec_dir + std::string("shaders/fs.glsl");
+
+	Shader shader = Shader(vs_path.c_str(), fs_path.c_str());
 	shader.use();
+
+
+	Camera camera = Camera(glm::vec3(-2.5f, 1.5f, -1.f));
+	camera.turn_pitch(glm::radians(-50.));
 
 	int win_width, win_height;
 	UI::get_win_size(&win_width, &win_height);

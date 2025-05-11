@@ -19,6 +19,12 @@ float hash12(vec2 p)
     p3 += dot(p3, p3.yzx + 33.33);
     return fract((p3.x + p3.y) * p3.z);
 }
+vec2 hash22(vec2 p)
+{
+	vec3 p3 = fract(vec3(p.xyx) * vec3(.1031, .1030, .0973));
+    p3 += dot(p3, p3.yzx+33.33);
+    return fract((p3.xx+p3.yz)*p3.zy);
+}
 
 vec2 wind()
 {
@@ -51,8 +57,11 @@ vec2 uv_in_square(vec2 uv)
 void main()
 {
 	vec2 skewed = vs_uv + wind();
+	vec2 square_xy_skewed = square_coordinates(skewed);
+
 	vec2 uv = uv_in_square(skewed); // Uv in current grass strand square
-	float threshold = hash12(square_coordinates(skewed)); // Max height for square
+
+	float threshold = hash12(square_xy_skewed); // Max height for square
 
 	if(
 			height > threshold || // Stop drawing if pixel higher than grass
