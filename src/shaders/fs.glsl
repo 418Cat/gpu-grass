@@ -20,16 +20,16 @@ float hash12(vec2 p)
     return fract((p3.x + p3.y) * p3.z);
 }
 
-vec2 uv_wind()
+vec2 wind()
 {
-	return vs_uv +
+	return
 		vec2(cos(wind_direction), sin(wind_direction))*
 		wind_force*
-		pow(height, wind_curve)*
-		(sin(time*wind_speed)/2. + .5);
+		pow(height, wind_curve)*      // Higher grass are more pushed by wind
+		(sin(time*wind_speed)/2.+.5); // Oscillating wind force (from 0 to 1)
 }
 
-// Avoids any tall border grass appearing
+// Avoids any tall grass appearing on the edge of the plane because of wind
 bool grass_root_outside(vec2 uv)
 {
 	return uv != clamp(uv, vec2(0.), vec2(1.));
@@ -50,15 +50,27 @@ vec2 uv_in_square(vec2 uv)
 
 void main()
 {
-	vec2 skewed = uv_wind();
-	vec2 uv = uv_in_square(skewed);
-	float threshold = hash12(square_coordinates(skewed));
+	vec2 skewed = vs_uv + wind();
+	vec2 uv = uv_in_square(skewed); // Uv in current grass strand square
+	float threshold = hash12(square_coordinates(skewed)); // Max height for square
 
 	if(
-			height > threshold ||
-			length(uv) > threshold-height/threshold || // Makes grass thin on top
-			grass_root_outside(skewed)
-			) discard;
+			height > threshold || // Stop drawing if pixel higher than grass
+			length(uv) > (threshold-height)/threshold * .5 || // Taller grass thin
+			grass_root_outside(skewed) // Don't draw grass from thin air at the edge
+			)
+	{
+		// Dirt color
+		if(height == 0.)
+		{
+			fs_color = vec4(40./255., 30./255., 0., 1.);
+			return;
+		}
 
-	fs_color = vec4(0., .1+height, 0., 1.);
+		discard;
+	}
+
+	// Green shading, guesswork to get something that looks good
+	fs_color = vec4(0., .1+height/1.3, 0., 1.);
+
 }

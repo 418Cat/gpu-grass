@@ -48,8 +48,8 @@ int main()
 	UI::show_ui = true;
 	UI::io->FontGlobalScale = 1.f;
 
-	Camera camera = Camera(glm::vec3(-1.5f, 2.f, -1.f));
-	camera.turn_pitch(glm::radians(-20.));
+	Camera camera = Camera(glm::vec3(-2.5f, 1.5f, -1.f));
+	camera.turn_pitch(glm::radians(-50.));
 
 	unsigned int vao, vbo, ebo;
 	glGenVertexArrays(1, &vao);
@@ -63,27 +63,24 @@ int main()
 	shader.use();
 
 	int win_width, win_height;
-	win_width = 800;
-	win_height = 600;
+	UI::get_win_size(&win_width, &win_height);
 	glm::mat4 projection_mat = glm::perspective(glm::radians(90.f), (float)win_width/(float)win_height, .1f, 100.f);
 	glm::mat4 view_mat = camera.camera_space();
 
-	float grass_height = .5f;
-	int n_shells = 40;
-	float density = 50.;
-	float plane_scale = 30.f;
+	float grass_height = .25f;	//
+	int n_shells = 40;			// Number of planes stacked 
+	float density = 60.;		//
+	float plane_scale = 2.f;    // Length for the side of the plane
 
-	float wind_direction = 1.f; 
-	float wind_curve = 2.f;
-	float wind_force = .1f;
-	float wind_speed = 0.3f;
+	float wind_direction = 1.f; // -pi < direction < pi
+	float wind_curve = 2.f;  	// Exponent of grass height
+	float wind_force = .02f; 	// How much the wind pushes on the grass
+	float wind_speed = 0.8f; 	// How fast the wind speed oscillates
 
 
 	float mouse_sensitivity = 1./100.;
 	glm::vec2 mouse_pos = glm::vec2(UI::io->MousePos.x, UI::io->MousePos.y);
-	glm::vec2 old_mouse_pos = glm::vec2(0.);
-
-	float camera_speed = 1.;
+	glm::vec2 old_mouse_pos = mouse_pos;
 
 	double time = 0.;
 
@@ -102,19 +99,28 @@ int main()
 		 *  UI Stuff 
 		 * ---------------------------------------------------------------------
 		 */
-		ImGui::DragFloat("Density", &density);
-		ImGui::SliderInt("n_shells", &n_shells, 1, 600);
-		ImGui::SliderFloat("grass_height", &grass_height, 0.01f, 1.7f);
+		ImGui::Text("Plane settings");
 		ImGui::DragFloat("Plane size", &plane_scale, plane_scale*0.05);
-		ImGui::DragFloat("Camera speed", &camera_speed, 1.f, 1.f, 100000.f);
+		ImGui::SliderInt("Number of shells", &n_shells, 1, 600);
+
+		ImGui::Spacing(); ImGui::Text("Grass settings");
+		ImGui::DragFloat("Grass density", &density);
+		ImGui::SliderFloat("Grass Height", &grass_height, 0.01f, 1.7f);
+
+		ImGui::Spacing(); ImGui::Text("Wind settings");
 		ImGui::SliderFloat("Wind direction", &wind_direction, -3.1415, 3.1415f);
 		ImGui::SliderFloat("Wind curve", &wind_curve, 0.01f, 10.f);
-		ImGui::SliderFloat("Wind force", &wind_force, 0.0f, 1.f);
+		ImGui::SliderFloat("Wind force", &wind_force, 0.0f, .5f);
 		ImGui::SliderFloat("Wind speed", &wind_speed, 0.f, 4.f);
 
+		ImGui::Spacing();
 		if(ImGui::Button("Reset view"))
 		{
 			camera.camera_pos = glm::vec3(0.);
+
+			// Cancel the camera's orientation
+			camera.turn_pitch(-camera.get_pitch());
+			camera.turn_yaw(-camera.get_yaw());
 		}
 
 
@@ -139,24 +145,24 @@ int main()
 		if(glfwGetKey(UI::window, GLFW_KEY_W) == GLFW_PRESS)
 		{
 			// Add camera front vector to its position
-			camera.camera_pos += camera.get_front()*(float)delta_time*camera_speed;
+			camera.camera_pos += camera.get_front()*(float)delta_time;
 		}
 		if(glfwGetKey(UI::window, GLFW_KEY_D) == GLFW_PRESS)
 		{
 			// Cross product with world Y to get right facing vector
 			camera.camera_pos +=
-				glm::normalize(glm::cross(camera.get_front(), glm::vec3(0.f, 1.f, 0.f)))*(float)delta_time*camera_speed;
+				glm::normalize(glm::cross(camera.get_front(), glm::vec3(0.f, 1.f, 0.f)))*(float)delta_time;
 		}
 		if(glfwGetKey(UI::window, GLFW_KEY_A) == GLFW_PRESS)
 		{
 			// Negated cross product with world Y to get left facing vector
 			camera.camera_pos += 
-				-glm::normalize(glm::cross(camera.get_front(), glm::vec3(0.f, 1.f, 0.f)))*(float)delta_time*camera_speed;
+				-glm::normalize(glm::cross(camera.get_front(), glm::vec3(0.f, 1.f, 0.f)))*(float)delta_time;
 		}
 		if(glfwGetKey(UI::window, GLFW_KEY_S) == GLFW_PRESS)
 		{
 			// Substract front facing vector to camera pos
-			camera.camera_pos += -camera.get_front()*(float)delta_time*camera_speed;
+			camera.camera_pos += -camera.get_front()*(float)delta_time;
 		}
 
 		view_mat = camera.camera_space(); // Update view matrix
@@ -172,7 +178,6 @@ int main()
 		for(int s = 0; s < n_shells; s++)
 		{
 			float normalized_height = (float)s/n_shells;
-			
 
 			// Translate up the model based on the shell index
 			glm::mat4 tmp_model = glm::translate(model_mat,
@@ -180,22 +185,18 @@ int main()
 
 			tmp_model = glm::scale(tmp_model, glm::vec3(plane_scale));
 
-			// Rotate the model over time
-			//tmp_model = glm::rotate(tmp_model, (float)glfwGetTime()/8.f, glm::vec3(0.f, 1.f, 0.f));
-
+			// Setting uniforms
 			shader.setMat4("model", glm::value_ptr(tmp_model));
 			shader.setMat4("view", glm::value_ptr(view_mat));
 			shader.setMat4("projection", glm::value_ptr(projection_mat));
 
-			shader.setFloat("height", normalized_height);
-
 			shader.setInt("n_squares", density*plane_scale);
 
+			shader.setFloat("height", normalized_height);
 			shader.setFloat("wind_direction", wind_direction);
 			shader.setFloat("wind_curve", wind_curve);
 			shader.setFloat("wind_force", wind_force/plane_scale);
 			shader.setFloat("wind_speed", wind_speed);
-
 			shader.setFloat("time", glfwGetTime());
 
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);

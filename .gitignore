@@ -1,6 +1,7 @@
 build/**
 compile_commands.json
 *.swp
+*.swo
 *.vim
 .cache/**
 *.old
