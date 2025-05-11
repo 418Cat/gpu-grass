@@ -32,7 +32,7 @@ vec2 wind()
 		vec2(cos(wind_direction), sin(wind_direction))*
 		wind_force*
 		pow(height, wind_curve)*      // Higher grass are more pushed by wind
-		(sin(time*wind_speed)/2.+.5); // Oscillating wind force (from 0 to 1)
+		(sin(time*wind_speed+vs_uv*n_squares/3.1415+height)/4.+.75); // Oscillating wind force (from .5 to 1)
 }
 
 // Avoids any tall grass appearing on the edge of the plane because of wind

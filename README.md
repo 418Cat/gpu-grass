@@ -37,5 +37,11 @@ ___
 ![Pointy grass 0](https://raw.githubusercontent.com/418Cat/gpu-grass/refs/heads/main/images/pointy_0.png)
 
 ![Pointy grass 1](https://raw.githubusercontent.com/418Cat/gpu-grass/refs/heads/main/images/pointy_1.png)
+
+![Wind 0](https://raw.githubusercontent.com/418Cat/gpu-grass/refs/heads/main/images/wind_0.png)
+
+![Wind 1](https://raw.githubusercontent.com/418Cat/gpu-grass/refs/heads/main/images/wind_1.png)
+
+![Wind long](https://raw.githubusercontent.com/418Cat/gpu-grass/refs/heads/main/images/wind_long.png)
 ___
 This code is under the MIT license

@@ -1,10 +1,7 @@
-#define EXEC_NAME "main"
-
-
 #include <GL/gl.h>
 
-#include "geometric.hpp"
-#include "trigonometric.hpp"
+#include <geometric.hpp>
+#include <trigonometric.hpp>
 #include <ext/matrix_clip_space.hpp>
 #include <ext/matrix_transform.hpp>
 #include <gtc/type_ptr.hpp>
@@ -48,7 +45,7 @@ void create_plane(unsigned int vbo, unsigned int ebo)
 std::string get_root_dir(char* file_path)
 {
 	std::string fpath = std::string(file_path);
-	std::string dpath = fpath.substr(0, fpath.find_last_of("/")+1);
+	std::string dpath = fpath.substr(0, fpath.find_last_of("/")+1); // Unix only
 	return dpath;
 }
 
@@ -57,7 +54,7 @@ int main(int a, char** args)
 	UI::ui_init();
 	UI::show_ui = true;
 	UI::io->FontGlobalScale = 1.f;
-	UI::io->IniFilename = NULL;
+	UI::io->IniFilename = NULL; // Disable imgui.ini file
 
 	// Setting up buffers and adding the plane
 	unsigned int vao, vbo, ebo;
@@ -68,7 +65,7 @@ int main(int a, char** args)
 	glBindVertexArray(vao);
 	create_plane(vbo, ebo);
 
-	// Getting the shader files path and compiling them
+	// Getting the shader files path relative to the main exec and compiling them
 	std::string exec_dir = get_root_dir(args[0]);
 	std::string vs_path = exec_dir + std::string("shaders/vs.glsl");
 	std::string fs_path = exec_dir + std::string("shaders/fs.glsl");
@@ -92,8 +89,8 @@ int main(int a, char** args)
 
 	float wind_direction = 1.f; // -pi < direction < pi
 	float wind_curve = 2.f;  	// Exponent of grass height
-	float wind_force = .02f; 	// How much the wind pushes on the grass
-	float wind_speed = 0.8f; 	// How fast the wind speed oscillates
+	float wind_force = .07f; 	// How much the wind pushes on the grass
+	float wind_speed = 1.8f; 	// How fast the wind speed oscillates
 
 
 	float mouse_sensitivity = 1./100.;
@@ -123,7 +120,7 @@ int main(int a, char** args)
 
 		ImGui::Spacing(); ImGui::Text("Grass settings");
 		ImGui::DragFloat("Grass density", &density);
-		ImGui::SliderFloat("Grass Height", &grass_height, 0.01f, 1.7f);
+		ImGui::SliderFloat("Grass Height", &grass_height, 0.01f, 2.f);
 
 		ImGui::Spacing(); ImGui::Text("Wind settings");
 		ImGui::SliderFloat("Wind direction", &wind_direction, -3.1415, 3.1415f);
