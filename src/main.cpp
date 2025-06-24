@@ -123,7 +123,7 @@ int main(int a, char** args)
 		 */
 		ImGui::Text("Plane settings");
 		ImGui::DragFloat("Plane size", &plane_scale, plane_scale*0.05);
-		ImGui::SliderInt("Number of shells", &n_shells, 1, 600);
+		ImGui::SliderInt("Number of shells", &n_shells, 1, 2000);
 
 		ImGui::Spacing(); ImGui::Text("Grass settings");
 		ImGui::DragFloat("Grass density", &density);
@@ -195,11 +195,12 @@ int main(int a, char** args)
 		 *  Drawing planes
 		 * ---------------------------------------------------------------------
 		 */
-		glm::mat4 model_mat = glm::mat4(1.f);
 
+		glm::mat4 model_mat = glm::scale(glm::mat4(1.), glm::vec3(plane_scale, 1., plane_scale));
+		
 		// Setting uniforms
-		shader.setMat4("model", glm::value_ptr(model_mat));
 		shader.setMat4("view", glm::value_ptr(view_mat));
+		shader.setMat4("model", glm::value_ptr(model_mat));
 		shader.setMat4("projection", glm::value_ptr(projection_mat));
 
 		shader.setInt("n_squares", density*plane_scale);
@@ -212,7 +213,7 @@ int main(int a, char** args)
 		shader.setFloat("wind_speed", wind_speed);
 		shader.setFloat("time", glfwGetTime());
 
-		// Draw n_shells instances of planes
+		// Draw n_shells instances of plane
 		glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, n_shells);
 
 		UI::ui_render_stop();

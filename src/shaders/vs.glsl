@@ -6,8 +6,8 @@ layout (location=1) in vec2 in_uv;
 uniform float total_height;
 uniform int n_shells;
 
-uniform mat4 model;
 uniform mat4 view;
+uniform mat4 model;
 uniform mat4 projection;
 
 out vec2 vs_uv;
