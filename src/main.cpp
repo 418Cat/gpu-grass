@@ -1,5 +1,3 @@
-#include <GL/gl.h>
-
 #include <geometric.hpp>
 #include <trigonometric.hpp>
 #include <ext/matrix_clip_space.hpp>
@@ -7,6 +5,8 @@
 #include <gtc/type_ptr.hpp>
 
 #include <imgui.h>
+#include <glad.c>
+
 
 #include "shader.h"
 #include "ui.h"
@@ -51,10 +51,17 @@ std::string get_root_dir(char* file_path)
 
 int main(int a, char** args)
 {
+
 	UI::ui_init();
 	UI::show_ui = true;
 	UI::io->FontGlobalScale = 1.f;
 	UI::io->IniFilename = NULL; // Disable imgui.ini file
+	
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+	{
+		std::cout << "Failed to initialize GLAD" << std::endl;
+		return -1;
+	}
 
 	// Setting up buffers and adding the plane
 	unsigned int vao, vbo, ebo;
@@ -190,32 +197,23 @@ int main(int a, char** args)
 		 */
 		glm::mat4 model_mat = glm::mat4(1.f);
 
-		for(int s = 0; s < n_shells; s++)
-		{
-			float normalized_height = (float)s/n_shells;
+		// Setting uniforms
+		shader.setMat4("model", glm::value_ptr(model_mat));
+		shader.setMat4("view", glm::value_ptr(view_mat));
+		shader.setMat4("projection", glm::value_ptr(projection_mat));
 
-			// Translate up the model based on the shell index
-			glm::mat4 tmp_model = glm::translate(model_mat,
-					glm::vec3(0.f, normalized_height*grass_height, -1.f));
+		shader.setInt("n_squares", density*plane_scale);
+		shader.setInt("n_shells", n_shells);
 
-			tmp_model = glm::scale(tmp_model, glm::vec3(plane_scale));
+		shader.setFloat("total_height", grass_height);
+		shader.setFloat("wind_direction", wind_direction);
+		shader.setFloat("wind_curve", wind_curve);
+		shader.setFloat("wind_force", wind_force/plane_scale);
+		shader.setFloat("wind_speed", wind_speed);
+		shader.setFloat("time", glfwGetTime());
 
-			// Setting uniforms
-			shader.setMat4("model", glm::value_ptr(tmp_model));
-			shader.setMat4("view", glm::value_ptr(view_mat));
-			shader.setMat4("projection", glm::value_ptr(projection_mat));
-
-			shader.setInt("n_squares", density*plane_scale);
-
-			shader.setFloat("height", normalized_height);
-			shader.setFloat("wind_direction", wind_direction);
-			shader.setFloat("wind_curve", wind_curve);
-			shader.setFloat("wind_force", wind_force/plane_scale);
-			shader.setFloat("wind_speed", wind_speed);
-			shader.setFloat("time", glfwGetTime());
-
-			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-		}
+		// Draw n_shells instances of planes
+		glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, n_shells);
 
 		UI::ui_render_stop();
 	}

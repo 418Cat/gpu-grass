@@ -1,7 +1,6 @@
 #ifndef SHADER_H_
 #define SHADER_H_
 
-#include <GLES3/gl3.h>
 #include <fstream>
 #include <iostream>
 
@@ -48,7 +47,8 @@ class Shader
 
 			unsigned int vertex, fragment;
 			int success;
-			char infoLog[512];
+			const int log_length = 4096;
+			char infoLog[log_length];
 
 			vertex = glCreateShader(GL_VERTEX_SHADER);
 			fragment = glCreateShader(GL_FRAGMENT_SHADER);
@@ -62,7 +62,7 @@ class Shader
 			if(!success)
 			{
 				// Get shader compile log
-				glGetShaderInfoLog(vertex, 512, NULL, infoLog);
+				glGetShaderInfoLog(vertex, log_length, NULL, infoLog);
 				std::cerr
 					<< "ERROR: Vertex shader compilation failed:\n"
 					<< infoLog << std::endl;
@@ -76,7 +76,7 @@ class Shader
 			glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
 			if(!success)
 			{
-				glGetShaderInfoLog(fragment, 512, NULL, infoLog);
+				glGetShaderInfoLog(fragment, log_length, NULL, infoLog);
 				std::cerr
 					<< "ERROR: Fragment shader compilation failed:\n"
 					<< infoLog << std::endl;

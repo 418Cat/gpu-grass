@@ -7,7 +7,6 @@
 
 #include <imgui.h>
 #include <GLFW/glfw3.h>
-#include <GL/gl.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 
@@ -18,6 +17,7 @@ class UI
 		static bool show_ui;
 		static GLFWwindow* window;
 		static ImGuiIO* io;
+		static float clear_color[4];
 
 	private:
 		static bool is_init;

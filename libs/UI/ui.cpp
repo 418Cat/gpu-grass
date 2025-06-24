@@ -7,6 +7,7 @@ bool 		UI::show_ui;
 bool		UI::is_init = false;
 bool		UI::render_started = false;
 ImGuiIO*	UI::io;
+float 		UI::clear_color[4] = {0.00, 0.15, 0.3, 1.};
 
 
 // Must be called to setup glfw && ImGui context
@@ -22,10 +23,10 @@ UI_ERROR UI::ui_init()
 		return ERR_INIT_GLFW;
 	}
 
-	const char* glfw_version = "#version 130";
-	// OpenGL 3.3 Core
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);	
+	const char* glfw_version = "#version 460";
+	// OpenGL 4.6 Core
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);	
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	window = glfwCreateWindow(800, 600, "", NULL, NULL);
@@ -47,7 +48,7 @@ UI_ERROR UI::ui_init()
 	io->FontGlobalScale = 3.f;
 	
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
-	ImGui_ImplOpenGL3_Init("#version 130");
+	ImGui_ImplOpenGL3_Init(glfw_version);
 
 	is_init = true;
 	return OK;
@@ -87,7 +88,7 @@ UI_ERROR UI::ui_render_start()
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 
-	glClearColor(0.f, 0.f, 0.f, 1.f);
+	glClearColor(clear_color[0], clear_color[1], clear_color[2], clear_color[3]);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	return OK;

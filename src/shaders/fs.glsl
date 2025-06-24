@@ -1,14 +1,15 @@
-#version 410 core 
+#version 330 core 
 
 in vec2 vs_uv;
 
-uniform float height;
 uniform int n_squares;
 uniform float wind_direction;
 uniform float wind_curve;
 uniform float wind_force;
 uniform float wind_speed;
 uniform float time;
+
+in float height;
 
 out vec4 fs_color;
 
@@ -18,12 +19,6 @@ float hash12(vec2 p)
 	vec3 p3  = fract(vec3(p.xyx) * .1031);
     p3 += dot(p3, p3.yzx + 33.33);
     return fract((p3.x + p3.y) * p3.z);
-}
-vec2 hash22(vec2 p)
-{
-	vec3 p3 = fract(vec3(p.xyx) * vec3(.1031, .1030, .0973));
-    p3 += dot(p3, p3.yzx+33.33);
-    return fract((p3.xx+p3.yz)*p3.zy);
 }
 
 vec2 wind()
@@ -72,7 +67,7 @@ void main()
 		// Dirt color
 		if(height == 0.)
 		{
-			fs_color = vec4(40./255., 30./255., 0., 1.);
+			fs_color = vec4(vec3(40./255., 30./255., 0.), 1.);
 			return;
 		}
 
@@ -80,6 +75,6 @@ void main()
 	}
 
 	// Green shading, guesswork to get something that looks good
-	fs_color = vec4(0., .1+height/1.3, 0., 1.);
+	fs_color = vec4(vec3(0., .1+height/1.3, 0.), 1.);
 
 }

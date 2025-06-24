@@ -19,6 +19,7 @@ target_include_directories(
 	${CMAKE_SOURCE_DIR}/libs/imgui/backends
 )
 
+add_subdirectory(glad)
 add_subdirectory(glm/glm)
 add_subdirectory(UI)
 add_subdirectory(shader)

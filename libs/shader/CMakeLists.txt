@@ -10,5 +10,5 @@ set_target_properties(
 
 target_link_libraries(
 	shader PUBLIC
-	GL.so.3
+	glad
 )
