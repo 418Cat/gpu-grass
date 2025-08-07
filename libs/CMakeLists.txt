@@ -15,11 +15,53 @@ add_library(
 
 target_include_directories(
 	imgui PUBLIC
-	${CMAKE_SOURCE_DIR}/libs/imgui
-	${CMAKE_SOURCE_DIR}/libs/imgui/backends
+	${CMAKE_CURRENT_SOURCE_DIR}/imgui/
+	${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends/
 )
 
-add_subdirectory(glad)
-add_subdirectory(glm/glm)
-add_subdirectory(UI)
-add_subdirectory(shader)
+target_link_libraries(
+	imgui PUBLIC
+	libglfw.so.3
+	libGL.so
+)
+
+
+
+
+# _____ Glad loader _____
+add_library(
+	glad
+	glad/src/glad.c
+	glad/include/glad/glad.h
+	glad/include/KHR/khrplatform.h
+)
+
+target_include_directories(
+	glad PUBLIC
+	${CMAKE_CURRENT_SOURCE_DIR}/glad/include
+)
+
+target_link_libraries(
+	glad PUBLIC
+	libglfw.so.3
+	libGL.so
+)
+
+# _____ GLM _____
+add_library(
+	glm
+	glm/glm/glm.hpp
+)
+
+set_target_properties(
+	glm PROPERTIES
+	LINKER_LANGUAGE CXX
+)
+
+target_include_directories(
+	glm PUBLIC
+	glm/glm
+)
+
+add_subdirectory(utils/UI)
+add_subdirectory(utils/shader)

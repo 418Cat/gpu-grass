@@ -1,7 +1,6 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-#include "ext/matrix_float4x4.hpp"
 #include "ext/matrix_transform.hpp"
 
 class Camera

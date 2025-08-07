@@ -1,12 +1,5 @@
-#include <geometric.hpp>
-#include <trigonometric.hpp>
-#include <ext/matrix_clip_space.hpp>
-#include <ext/matrix_transform.hpp>
-#include <gtc/type_ptr.hpp>
-
-#include <imgui.h>
-#include <glad.c>
-
+#include "ext/matrix_clip_space.hpp"
+#include "gtc/type_ptr.hpp"
 
 #include "shader.h"
 #include "ui.h"
